@@ -1,0 +1,47 @@
+services:
+  newsletter-rabbitmq:
+    container_name: Newsletter.RabbitMq
+    image: rabbitmq:3-management-alpine
+    hostname: newsletter-rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: Livros123Estudos
+    volumes:
+      - ~/.containers/queue/data/:/var/lib/rabbitmq/
+      - ~/.containers/queue/log/:/var/log/rabbitmq
+    networks:
+      - estudos-networks
+      
+  newsletter-sqldata:
+    image: mcr.microsoft.com/azure-sql-edge
+    container_name: Newsletter.Sqldata
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Livros123@Estudos"
+    ports:
+      - "1200:1433"
+    volumes:
+      - "./.containers/database:/var/opt/mssql/data"
+    networks:
+      - estudos-networks
+      
+  api:
+    container_name: estudos.api
+    build:
+      dockerfile: EscolaRabbitMQ/Dockerfile
+      context: .
+    ports:
+      - 8080:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on: ["newsletter-rabbitmq","newsletter-sqldata"]
+    restart: on-failure
+    networks:
+      - estudos-networks    
+
+networks:
+  estudos-networks:
+    driver: bridge      
